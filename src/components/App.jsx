@@ -1,28 +1,101 @@
-import { ContactForm } from './ContactForm/ContactForm';
-import { ContactList } from './ContactList/ContactList';
-import { Filter } from './Filter/Filter';
-import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { fetchContacts } from '../redux/operations';
+import React from 'react';
+import { lazy, useEffect } from 'react';
+import { Route, Routes } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectIsRefreshing } from '../redux/auth/selectors';
+import { Dna } from 'react-loader-spinner';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-import { GlobalStyle } from './GlobalStyle';
+import { PrivateRoute } from './PrivateRoute';
+import { RestrictedRoute } from './RestrictedRoute';
+import { refreshUser } from '../redux/auth/operations';
+import Home from '../pages/HomePage/Home';
+import Layout from './layout/Layout';
+import NotFoundPage from '../pages/NotFounPage/notPagesFound';
 
-export const App = () => {
+document.title = 'PhonebookBox_redux';
+
+const RegisterPage = lazy(() => import('../pages/RegisterPage/Register'));
+const LoginPage = lazy(() => import('../pages/LoginPage/Login'));
+const ContactsPage = lazy(() => import('../pages/ContactsPage/Contacts'));
+
+const App = () => {
   const dispatch = useDispatch();
+  const isRefreshing = useSelector(selectIsRefreshing);
 
   useEffect(() => {
-    dispatch(fetchContacts());
+    dispatch(refreshUser());
   }, [dispatch]);
 
   return (
-    <div>
-      <h1>Phonebook</h1>
-      <ContactForm />
+    <>
+      {isRefreshing ? (
+        <Dna
+          visible={true}
+          height="80"
+          width="80"
+          ariaLabel="dna-loading"
+          wrapperStyle={{}}
+          wrapperClass="dna-wrapper"
+        />
+      ) : (
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route
+              path="register"
+              element={
+                <RestrictedRoute
+                  redirectTo="/contacts"
+                  component={<RegisterPage />}
+                />
+              }
+              />
+              
+            <Route
+              path="login"
+              element={
+                <RestrictedRoute
+                  redirectTo="/contacts"
+                  component={<LoginPage />}
+                />
+              }
+              />
+              
+            <Route
+              path="contacts"
+              element={
+                <PrivateRoute
+                  redirectTo="/login"
+                  component={<ContactsPage />}
+                />
+              }
+              />
 
-      <h2>Contacts</h2>
-      <Filter />
-      <ContactList />
-      <GlobalStyle />
-    </div>
+               <Route path="*" element={<NotFoundPage />} />
+              
+            </Route>
+            
+            
+            
+        </Routes>
+      )}
+      <ToastContainer
+        font-size="15px"
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+    </>
   );
 };
+
+export default App;
